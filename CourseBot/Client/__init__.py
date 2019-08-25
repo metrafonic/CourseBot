@@ -107,7 +107,7 @@ class DiscordClient(discord.Client):
                     camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
                     screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
                     combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
-                    if released < course.added and False:
+                    if released < course.added:
                         break
                     if released in [dt[0] for dt in scraped_lecture_dates]:
                         break
