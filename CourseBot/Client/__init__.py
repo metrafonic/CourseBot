@@ -5,11 +5,13 @@ import datetime
 from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 from .models import engine, Course, Channel, association_table, Lecture
+
 Session = sessionmaker(bind=engine)
 session = Session()
 
 forelesning_main = "http://forelesning.gjovik.ntnu.no/publish/"
 forelesning_url_base = f"{forelesning_main}index.php?sortby=start&sorting=reverse&sortby=start&sorting=normal&topic="
+
 
 class DiscordClient(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -46,12 +48,12 @@ class DiscordClient(discord.Client):
                 print("unSub fail")
         if message.content.startswith("$last-lecture"):
             try:
-                lecture_obj = session.query(Lecture).join(Course).join(association_table).join(Channel).filter(Channel.id==int(message.channel.id)).order_by(Lecture.released.desc()).first()
+                lecture_obj = session.query(Lecture).join(Course).join(association_table).join(Channel).filter(
+                    Channel.id == int(message.channel.id)).order_by(Lecture.released.desc()).first()
                 text = self.get_lecture_formatted(lecture_obj)
                 await message.channel.send(text)
             except:
                 print("fail")
-
 
     def subscribe_to_course(self, channel, course, unsubscribe=False):
         while True:
@@ -91,12 +93,10 @@ class DiscordClient(discord.Client):
         await self.wait_until_ready()
         while not self.is_closed():
             for course in session.query(Course).join(association_table).join(Channel).all():
-                print(course)
                 r = requests.get(f"{forelesning_url_base}{course.id}")
                 b = BeautifulSoup(r.text)
                 rows = b.find_all("tr", {"class": "lecture"})
                 scraped_lecture_dates = session.query(Lecture.released).filter_by(course=course).all()
-                print(scraped_lecture_dates)
                 for row in rows:
                     columns = row.find_all("td")
                     released = datetime.datetime.strptime(str(columns[0].contents[0]), "%Y-%m-%d %H:%M")
@@ -111,7 +111,9 @@ class DiscordClient(discord.Client):
                         break
                     if released in [dt[0] for dt in scraped_lecture_dates]:
                         break
-                    lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen, combined=combined, length=length, title=title, lecturer=lecturer, released=released)
+                    lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen,
+                                          combined=combined, length=length, title=title, lecturer=lecturer,
+                                          released=released)
                     session.add(lecture_obj)
                     session.commit()
                     for channel in course.channels:
