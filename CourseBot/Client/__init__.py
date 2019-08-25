@@ -26,14 +26,34 @@ class DiscordClient(discord.Client):
         # don't respond to ourselves
         if message.author == self.user:
             return
-        if message.content.startswith("$follow-course "):
-            course = str(message.content).split("$follow-course ")[1]
-            channel = message.channel.id
-            result = self.subscribe_to_course(channel, course)
-            await message.channel.send(result)
+        if message.content.startswith("ping"):
+            await message.channel.send("pong")
+        if message.content.startswith("$subscribe "):
+            try:
+                course = str(message.content).split("$subscribe ")[1]
+                channel = message.channel.id
+                result = self.subscribe_to_course(channel, course)
+                await message.channel.send(result)
+            except:
+                print("Sub fail")
+        if message.content.startswith("$unsubscribe "):
+            try:
+                course = str(message.content).split("$unsubscribe ")[1]
+                channel = message.channel.id
+                result = self.subscribe_to_course(channel, course, unsubscribe=True)
+                await message.channel.send(result)
+            except:
+                print("unSub fail")
+        if message.content.startswith("$last-lecture"):
+            try:
+                lecture_obj = session.query(Lecture).join(Course).join(association_table).join(Channel).filter(Channel.id==int(message.channel.id)).order_by(Lecture.released.desc()).first()
+                text = self.get_lecture_formatted(lecture_obj)
+                await message.channel.send(text)
+            except:
+                print("fail")
 
 
-    def subscribe_to_course(self, channel, course):
+    def subscribe_to_course(self, channel, course, unsubscribe=False):
         while True:
             course_obj = session.query(Course).filter_by(id=course).first()
             if not course_obj:
@@ -50,18 +70,27 @@ class DiscordClient(discord.Client):
                 session.commit()
                 continue
             break
+
         if not channel_obj in course_obj.channels:
+            if unsubscribe:
+                return f"Not subscribed to '{course}'"
             course_obj.channels.append(channel_obj)
             session.add(course_obj)
             session.commit()
-            return f"Now following '{course}' in this channel"
+            return f"Now subscribed to '{course}' in this channel\nNew lectures will be posted as soon as they are available"
         else:
-            return "Already followed in this channel!"
+            if unsubscribe:
+                course_obj.channels.remove(channel_obj)
+                session.add(course_obj)
+                session.commit()
+                return f"Unsubscribed from '{course_obj.id}'"
+            else:
+                return "Already subscribed in this channel!"
 
     async def scrape_courses(self):
         await self.wait_until_ready()
         while not self.is_closed():
-            for course in session.query(Course).all():
+            for course in session.query(Course).join(association_table).join(Channel).all():
                 print(course)
                 r = requests.get(f"{forelesning_url_base}{course.id}")
                 b = BeautifulSoup(r.text)
@@ -78,6 +107,8 @@ class DiscordClient(discord.Client):
                     camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
                     screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
                     combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
+                    if released < course.added and False:
+                        break
                     if released in [dt[0] for dt in scraped_lecture_dates]:
                         break
                     lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen, combined=combined, length=length, title=title, lecturer=lecturer, released=released)
@@ -85,11 +116,8 @@ class DiscordClient(discord.Client):
                     session.commit()
                     for channel in course.channels:
                         channel = self.get_channel(int(channel.id))
-                        await channel.send(f"__**New lecture for '{course.id}'**__\n"
-                                           f"'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\n"
-                                           f"Screen: {forelesning_main}{lecture_obj.screen}\n"
-                                           f"Audio: {forelesning_main}{lecture_obj.audio}\n"
-                                           f"Camera: {forelesning_main}{lecture_obj.camera}\n"
-                                           f"Combined: {forelesning_main}{lecture_obj.combined}\n"
-                                           f"")
-            await asyncio.sleep(20)  # task runs every 60 seconds
+                        await channel.send(self.get_lecture_formatted(lecture_obj))
+            await asyncio.sleep(300)  # task runs every 60 seconds
+
+    def get_lecture_formatted(self, lecture_obj):
+        return f"__**New lecture for '{lecture_obj.course_id}'**__\n'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\nScreen: {forelesning_main}{lecture_obj.screen}\nAudio: {forelesning_main}{lecture_obj.audio}\nCamera: {forelesning_main}{lecture_obj.camera}\nCombined: {forelesning_main}{lecture_obj.combined}\n"

@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import *
 from sqlalchemy.orm import relationship
+import datetime
 
 engine = create_engine('sqlite:///database.db')
 Base = declarative_base()
@@ -30,6 +31,7 @@ class Course(Base):
     name = Column(String)
     channels = relationship("Channel", secondary=association_table)
     lectures = relationship("Lecture", backref="course")
+    added = Column(DateTime, default=datetime.datetime.now())
 
 class Channel(Base):
     __tablename__ = "channel"
