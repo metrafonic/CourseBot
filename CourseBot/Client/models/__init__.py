@@ -4,8 +4,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import *
 from sqlalchemy.orm import relationship
 import datetime
+import os
 
-engine = create_engine('sqlite:///database.db')
+if not os.path.exists(os.path.join(os.path.dirname(__file__), "../../../database")):
+    os.makedirs(os.path.join(os.path.dirname(__file__), "../../../database"))
+engine = create_engine('sqlite:///database/database.db')
 Base = declarative_base()
 
 association_table = Table('association', Base.metadata,
@@ -38,6 +41,7 @@ class Channel(Base):
     id = Column(Integer, primary_key=True)
 
 def init_db():
+
     Course.__table__.create(bind=engine, checkfirst=True)
     Channel.__table__.create(bind=engine, checkfirst=True)
     Lecture.__table__.create(bind=engine, checkfirst=True)
