@@ -2,6 +2,15 @@
 A discord bot for notifying about new courses
 
 ## Installing
+### Docker image:
+https://hub.docker.com/r/metrafonic/coursebot
+```
+docker pull metrafonic/coursebot
+```
+```
+docker run --env "TOKEN=yourdiscordtoken metrafonic/coursebot"
+```
+### Source
 1. Clone:
   ```
   git clone https://github.com/metrafonic/CourseBot
