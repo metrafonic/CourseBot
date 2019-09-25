@@ -93,32 +93,35 @@ class DiscordClient(discord.Client):
         await self.wait_until_ready()
         while not self.is_closed():
             for course in session.query(Course).join(association_table).join(Channel).all():
-                r = requests.get(f"{forelesning_url_base}{course.id}")
-                b = BeautifulSoup(r.text)
-                rows = b.find_all("tr", {"class": "lecture"})
-                scraped_lecture_dates = session.query(Lecture.released).filter_by(course=course).all()
-                for row in rows:
-                    columns = row.find_all("td")
-                    released = datetime.datetime.strptime(str(columns[0].contents[0]), "%Y-%m-%d %H:%M")
-                    length = str(columns[1].contents[0])
-                    lecturer = str(columns[2].contents[0])
-                    title = str(columns[3].contents[0])
-                    audio = columns[5].find("a", {"title": "Audio, MP3"})["href"]
-                    camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
-                    screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
-                    combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
-                    if released < course.added:
-                        break
-                    if released in [dt[0] for dt in scraped_lecture_dates]:
-                        break
-                    lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen,
-                                          combined=combined, length=length, title=title, lecturer=lecturer,
-                                          released=released)
-                    session.add(lecture_obj)
-                    session.commit()
-                    for channel in course.channels:
-                        channel = self.get_channel(int(channel.id))
-                        await channel.send(self.get_lecture_formatted(lecture_obj))
+                try:
+                    r = requests.get(f"{forelesning_url_base}{course.id}", timeout=10)
+                    b = BeautifulSoup(r.text)
+                    rows = b.find_all("tr", {"class": "lecture"})
+                    scraped_lecture_dates = session.query(Lecture.released).filter_by(course=course).all()
+                    for row in rows:
+                        columns = row.find_all("td")
+                        released = datetime.datetime.strptime(str(columns[0].contents[0]), "%Y-%m-%d %H:%M")
+                        length = str(columns[1].contents[0])
+                        lecturer = str(columns[2].contents[0])
+                        title = str(columns[3].contents[0])
+                        audio = columns[5].find("a", {"title": "Audio, MP3"})["href"]
+                        camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
+                        screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
+                        combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
+                        if released < course.added:
+                            break
+                        if released in [dt[0] for dt in scraped_lecture_dates]:
+                            break
+                        lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen,
+                                              combined=combined, length=length, title=title, lecturer=lecturer,
+                                              released=released)
+                        session.add(lecture_obj)
+                        session.commit()
+                        for channel in course.channels:
+                            channel = self.get_channel(int(channel.id))
+                            await channel.send(self.get_lecture_formatted(lecture_obj))
+                except:
+                    print("Scrape excp")
             await asyncio.sleep(300)  # task runs every 60 seconds
 
     def get_lecture_formatted(self, lecture_obj):
