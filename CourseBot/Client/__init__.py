@@ -9,7 +9,7 @@ from CourseBot.Client.models import engine, Course, Channel, association_table, 
 Session = sessionmaker(bind=engine)
 session = Session()
 
-forelesning_main = "http://forelesning.gjovik.ntnu.no/publish/"
+forelesning_main = "https://forelesning.gjovik.ntnu.no/publish/"
 forelesning_url_base = f"{forelesning_main}index.php?sortby=start&sorting=reverse&sortby=start&sorting=normal&topic="
 
 
@@ -104,10 +104,10 @@ class DiscordClient(discord.Client):
                         length = str(columns[1].contents[0])
                         lecturer = str(columns[2].contents[0])
                         title = str(columns[3].contents[0])
-                        audio = columns[5].find("a", {"title": "Audio, MP3"})["href"].replace("http://","https://")
-                        camera = columns[5].find("a", {"title": "Camera - MP4"})["href"].replace("http://","https://")
-                        screen = columns[5].find("a", {"title": "Screen - MP4"})["href"].replace("http://","https://")
-                        combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"].replace("http://","https://")
+                        audio = columns[5].find("a", {"title": "Audio, MP3"})["href"]
+                        camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
+                        screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
+                        combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
                         if released < course.added:
                             break
                         if released in [dt[0] for dt in scraped_lecture_dates]:
