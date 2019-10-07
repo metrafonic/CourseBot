@@ -1,9 +1,9 @@
 import argparse
-import sys
 import os
-from Client import DiscordClient
-import threading
-from Client import models
+from CourseBot.Client import DiscordClient
+from CourseBot.Client import models
+
+
 parser = argparse.ArgumentParser(description='Discord bot to manage and notify about new courses')
 parser.add_argument('--token', metavar='t', type=str,
                     help='token')
