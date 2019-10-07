@@ -125,4 +125,4 @@ class DiscordClient(discord.Client):
             await asyncio.sleep(300)  # task runs every 60 seconds
 
     def get_lecture_formatted(self, lecture_obj):
-        return f"@all\n__**New lecture for '{lecture_obj.course_id}'**__\n'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\nScreen: {forelesning_main}{lecture_obj.screen}\nAudio: {forelesning_main}{lecture_obj.audio}\nCamera: {forelesning_main}{lecture_obj.camera}\nCombined: {forelesning_main}{lecture_obj.combined}\n"
+        return f"@everyone\n__**New lecture for '{lecture_obj.course_id}'**__\n'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\nScreen: {forelesning_main}{lecture_obj.screen}\nAudio: {forelesning_main}{lecture_obj.audio}\nCamera: {forelesning_main}{lecture_obj.camera}\nCombined: {forelesning_main}{lecture_obj.combined}\n"
