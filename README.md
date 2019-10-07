@@ -27,5 +27,5 @@ docker run --env "TOKEN=yourdiscordtoken metrafonic/coursebot"
 ## Running
 You need a discord bot token: https://discordapp.com/developers/applications
 ```
-python CourseBot yourtokengoeshere
+python -m CourseBot yourtokengoeshere
 ```
