@@ -48,12 +48,13 @@ class DiscordClient(discord.Client):
                 print("unSub fail")
         if message.content.startswith("$last-lecture"):
             try:
+                author = message.author.mention
                 lecture_obj = session.query(Lecture).join(Course).join(association_table).join(Channel).filter(
                     Channel.id == int(message.channel.id)).order_by(Lecture.released.desc()).first()
-                text = self.get_lecture_formatted(lecture_obj)
+                text = self.get_lecture_formatted(lecture_obj, new=False, mention=[author])
                 await message.channel.send(text)
             except:
-                print("fail")
+                print("lastlecture fail")
 
     def subscribe_to_course(self, channel, course, unsubscribe=False):
         while True:
@@ -95,7 +96,7 @@ class DiscordClient(discord.Client):
             for course in session.query(Course).join(association_table).join(Channel).all():
                 try:
                     r = requests.get(f"{forelesning_url_base}{course.id}", timeout=10)
-                    b = BeautifulSoup(r.text)
+                    b = BeautifulSoup(r.text, features="html.parser")
                     rows = b.find_all("tr", {"class": "lecture"})
                     scraped_lecture_dates = session.query(Lecture.released).filter_by(course=course).all()
                     for row in rows:
@@ -108,8 +109,6 @@ class DiscordClient(discord.Client):
                         camera = columns[5].find("a", {"title": "Camera - MP4"})["href"]
                         screen = columns[5].find("a", {"title": "Screen - MP4"})["href"]
                         combined = columns[5].find("a", {"title": "Combined camera and screen - MP4"})["href"]
-                        if released < course.added:
-                            break
                         if released in [dt[0] for dt in scraped_lecture_dates]:
                             break
                         lecture_obj = Lecture(course_id=course.id, audio=audio, camera=camera, screen=screen,
@@ -117,12 +116,22 @@ class DiscordClient(discord.Client):
                                               released=released)
                         session.add(lecture_obj)
                         session.commit()
-                        for channel in course.channels:
-                            channel = self.get_channel(int(channel.id))
-                            await channel.send(self.get_lecture_formatted(lecture_obj))
+                        if released < course.added:
+                            for channel in course.channels:
+                                channel = self.get_channel(int(channel.id))
+                                await channel.send(self.get_lecture_formatted(lecture_obj, new=True))
                 except:
                     print("Scrape excp")
             await asyncio.sleep(300)  # task runs every 60 seconds
 
-    def get_lecture_formatted(self, lecture_obj):
-        return f"@everyone\n__**New lecture for '{lecture_obj.course_id}'**__\n'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\nScreen: {forelesning_main}{lecture_obj.screen}\nAudio: {forelesning_main}{lecture_obj.audio}\nCamera: {forelesning_main}{lecture_obj.camera}\nCombined: {forelesning_main}{lecture_obj.combined}\n"
+    def get_lecture_formatted(self, lecture_obj, new: bool=False, mention: list = []) -> str:
+        header=""
+        title = "Last"
+        if new:
+            header="@everyone\n"
+            title = "New"
+        if mention:
+            for user in mention:
+                header += f"{user} "
+            header += "\n"
+        return f"{header}__**{title} lecture for '{lecture_obj.course_id}'**__\n'{lecture_obj.title}' by {lecture_obj.lecturer} - {lecture_obj.length}\nScreen: {forelesning_main}{lecture_obj.screen}\nAudio: {forelesning_main}{lecture_obj.audio}\nCamera: {forelesning_main}{lecture_obj.camera}\nCombined: {forelesning_main}{lecture_obj.combined}\n"
