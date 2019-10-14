@@ -116,7 +116,7 @@ class DiscordClient(discord.Client):
                                               released=released)
                         session.add(lecture_obj)
                         session.commit()
-                        if released < course.added:
+                        if released > course.added:
                             for channel in course.channels:
                                 channel = self.get_channel(int(channel.id))
                                 await channel.send(self.get_lecture_formatted(lecture_obj, new=True))
