@@ -128,7 +128,7 @@ class DiscordClient(discord.Client):
         header=""
         title = "Last"
         if new:
-            header="@everyone\n"
+            header="@here\n"
             title = "New"
         if mention:
             for user in mention:
